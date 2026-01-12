@@ -12,6 +12,8 @@ spec:
       labels:
         component: web
     spec:
+      imagePullSecrets:
+        - name: ghcr-creds
       containers:
         - name: client
           image: ghcr.io/mohamm4c/multi-client
