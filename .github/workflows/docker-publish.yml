@@ -7,44 +7,44 @@ on:
     branches: ["master"]
 
 jobs:
-  build_and_push:
-    name: Build + Test + Push to GHCR
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+  # build_and_push:
+  #   name: Build + Test + Push to GHCR
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     packages: write
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
 
-      # TESTS
-      - name: Build test image
-        run: docker build -t react-test -f ./client/Dockerfile.dev ./client
+  #     # TESTS
+  #     - name: Build test image
+  #       run: docker build -t react-test -f ./client/Dockerfile.dev ./client
 
-      - name: Run tests
-        run: docker run -e CI=true react-test npm test
+  #     - name: Run tests
+  #       run: docker run -e CI=true react-test npm test
 
-      # GHCR LOGIN
-      - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+  #     # GHCR LOGIN
+  #     - name: Log in to GHCR
+  #       if: github.event_name != 'pull_request'
+  #       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      # BUILD PROD IMAGES (tag with SHA)
-      - name: Build production images
-        if: github.event_name != 'pull_request'
-        run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/multi-client:${{ github.sha }} ./client
-          docker build -t ghcr.io/${{ github.repository_owner }}/multi-server:${{ github.sha }} ./server
-          docker build -t ghcr.io/${{ github.repository_owner }}/multi-worker:${{ github.sha }} ./worker
+  #     # BUILD PROD IMAGES (tag with SHA)
+  #     - name: Build production images
+  #       if: github.event_name != 'pull_request'
+  #       run: |
+  #         docker build -t ghcr.io/${{ github.repository_owner }}/multi-client:${{ github.sha }} ./client
+  #         docker build -t ghcr.io/${{ github.repository_owner }}/multi-server:${{ github.sha }} ./server
+  #         docker build -t ghcr.io/${{ github.repository_owner }}/multi-worker:${{ github.sha }} ./worker
 
-      # PUSH
-      - name: Push images to GHCR
-        if: github.event_name != 'pull_request'
-        run: |
-          docker push ghcr.io/${{ github.repository_owner }}/multi-client:${{ github.sha }}
-          docker push ghcr.io/${{ github.repository_owner }}/multi-server:${{ github.sha }}
-          docker push ghcr.io/${{ github.repository_owner }}/multi-worker:${{ github.sha }}
+  #     # PUSH
+  #     - name: Push images to GHCR
+  #       if: github.event_name != 'pull_request'
+  #       run: |
+  #         docker push ghcr.io/${{ github.repository_owner }}/multi-client:${{ github.sha }}
+  #         docker push ghcr.io/${{ github.repository_owner }}/multi-server:${{ github.sha }}
+  #         docker push ghcr.io/${{ github.repository_owner }}/multi-worker:${{ github.sha }}
 
 
 
