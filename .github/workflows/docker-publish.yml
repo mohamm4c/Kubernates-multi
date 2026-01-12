@@ -4,12 +4,7 @@ on:
   push:
     branches: ["master"]
   workflow_dispatch:   # allows manual run from GitHub UI
-env:
-        CLOUDSDK_CORE_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
-        CLOUDSDK_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
-        GCLOUD_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
-        GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
-        GOOGLE_CLOUD_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+
 jobs:
   deploy_gke:
     name: Deploy to Google Kubernetes Engine
@@ -31,19 +26,8 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      
-      # ---------------------------------------------------
-      # Clear any poisoned PROJECT_ID env vars (important)
-      # ---------------------------------------------------
-      - name: Clear project env vars
-        run: |
-          echo "CLOUDSDK_CORE_PROJECT=" >> $GITHUB_ENV
-          echo "CLOUDSDK_PROJECT=" >> $GITHUB_ENV
-          echo "GCLOUD_PROJECT=" >> $GITHUB_ENV
-          echo "GCP_PROJECT=" >> $GITHUB_ENV
-          echo "GOOGLE_CLOUD_PROJECT=" >> $GITHUB_ENV
-          echo "PROJECT_ID=" >> $GITHUB_ENV
-
+    
+     
       # -------------------------
       # Install + configure gcloud
       # -------------------------
