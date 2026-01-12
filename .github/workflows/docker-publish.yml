@@ -60,11 +60,11 @@ jobs:
 
       # OPTIONAL: if you want to force image update
       # (remove this block if images are already in manifests)
-      - name: Update images (optional)
-        run: |
-          kubectl set image deployment/multi-client multi-client=ghcr.io/${{ github.repository_owner }}/multi-client:${{ github.sha }}
-          kubectl set image deployment/multi-server multi-server=ghcr.io/${{ github.repository_owner }}/multi-server:${{ github.sha }}
-          kubectl set image deployment/multi-worker multi-worker=ghcr.io/${{ github.repository_owner }}/multi-worker:${{ github.sha }}
+      # - name: Update images (optional)
+      #   run: |
+      #     kubectl set image deployment/multi-client multi-client=ghcr.io/${{ github.repository_owner }}/multi-client:${{ github.sha }}
+      #     kubectl set image deployment/multi-server multi-server=ghcr.io/${{ github.repository_owner }}/multi-server:${{ github.sha }}
+      #     kubectl set image deployment/multi-worker multi-worker=ghcr.io/${{ github.repository_owner }}/multi-worker:${{ github.sha }}
 
       - name: Wait for rollout
         run: |
