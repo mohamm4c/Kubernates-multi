@@ -1,79 +1,60 @@
-name: Docker + Deploy (EB + GKE)
+name: Deploy to GKE only
 
 on:
   push:
     branches: ["master"]
-  pull_request:
-    branches: ["master"]
+  workflow_dispatch:   # allows manual run from GitHub UI
 
 jobs:
-  # build_and_push:
-  #   name: Build + Test + Push to GHCR
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
-
-  #     # TESTS
-  #     - name: Build test image
-  #       run: docker build -t react-test -f ./client/Dockerfile.dev ./client
-
-  #     - name: Run tests
-  #       run: docker run -e CI=true react-test npm test
-
-  #     # GHCR LOGIN
-  #     - name: Log in to GHCR
-  #       if: github.event_name != 'pull_request'
-  #       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-
-  #     # BUILD PROD IMAGES (tag with SHA)
-  #     - name: Build production images
-  #       if: github.event_name != 'pull_request'
-  #       run: |
-  #         docker build -t ghcr.io/${{ github.repository_owner }}/multi-client:${{ github.sha }} ./client
-  #         docker build -t ghcr.io/${{ github.repository_owner }}/multi-server:${{ github.sha }} ./server
-  #         docker build -t ghcr.io/${{ github.repository_owner }}/multi-worker:${{ github.sha }} ./worker
-
-  #     # PUSH
-  #     - name: Push images to GHCR
-  #       if: github.event_name != 'pull_request'
-  #       run: |
-  #         docker push ghcr.io/${{ github.repository_owner }}/multi-client:${{ github.sha }}
-  #         docker push ghcr.io/${{ github.repository_owner }}/multi-server:${{ github.sha }}
-  #         docker push ghcr.io/${{ github.repository_owner }}/multi-worker:${{ github.sha }}
-
-
-
   deploy_gke:
-    name: Deploy to GKE
-    if: github.event_name != 'pull_request'
+    name: Deploy to Google Kubernetes Engine
     runs-on: ubuntu-latest
-    needs: build_and_push
 
     permissions:
       contents: read
       id-token: write   # REQUIRED for Google OIDC
-      # packages not required here unless you also push images in this job
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Auth to Google Cloud (OIDC)
+      # -------------------------
+      # Authenticate to GCP (OIDC)
+      # -------------------------
+      - name: Auth to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
+      # ---------------------------------------------------
+      # Clear any poisoned PROJECT_ID env vars (important)
+      # ---------------------------------------------------
+      - name: Clear project env vars
+        run: |
+          echo "CLOUDSDK_CORE_PROJECT=" >> $GITHUB_ENV
+          echo "CLOUDSDK_PROJECT=" >> $GITHUB_ENV
+          echo "GCLOUD_PROJECT=" >> $GITHUB_ENV
+          echo "GCP_PROJECT=" >> $GITHUB_ENV
+          echo "GOOGLE_CLOUD_PROJECT=" >> $GITHUB_ENV
+          echo "PROJECT_ID=" >> $GITHUB_ENV
+
+      # -------------------------
+      # Install + configure gcloud
+      # -------------------------
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
+      - name: Force gcloud project
+        run: |
+          gcloud config set project "${{ secrets.GCP_PROJECT_ID }}"
+          gcloud config get-value project
+
+      # -------------------------
+      # Get GKE kubeconfig
+      # -------------------------
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v2
         with:
@@ -81,11 +62,16 @@ jobs:
           location: ${{ secrets.GKE_CLUSTER_LOCATION }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Apply manifests
+      # -------------------------
+      # Deploy to Kubernetes
+      # -------------------------
+      - name: Apply Kubernetes manifests
         run: |
           kubectl apply -f k8s/
 
-      - name: Update images (deploy this commit)
+      # OPTIONAL: if you want to force image update
+      # (remove this block if images are already in manifests)
+      - name: Update images (optional)
         run: |
           kubectl set image deployment/multi-client multi-client=ghcr.io/${{ github.repository_owner }}/multi-client:${{ github.sha }}
           kubectl set image deployment/multi-server multi-server=ghcr.io/${{ github.repository_owner }}/multi-server:${{ github.sha }}
