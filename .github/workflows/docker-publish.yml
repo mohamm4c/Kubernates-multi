@@ -69,7 +69,8 @@ jobs:
       - name: Wait for rollout (ALL)
         run: |
           kubectl rollout status deployment/client-deployment
-          kubectl rollout status deployment/server-deployment
-          kubectl rollout status deployment/worker-deployment
           kubectl rollout status deployment/postgres-deployment
           kubectl rollout status deployment/redis-deployment
+          kubectl rollout status deployment/worker-deployment
+          kubectl rollout status deployment/server-deployment
+          
